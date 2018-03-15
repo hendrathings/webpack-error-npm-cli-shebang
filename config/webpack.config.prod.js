@@ -276,10 +276,10 @@ module.exports = {
     }),
     // Wouter: Added to remove Unexpected character '#' from npm-cli.js
     // https://stackoverflow.com/a/40763389/6761698
-    new webpack.BannerPlugin({
-      banner: "#!/usr/bin/env node",
-      raw: true
-    })
+    // new webpack.BannerPlugin({
+    //   banner: "#!/usr/bin/env node",
+    //   raw: true
+    // })
     // new webpack.BannerPlugin("#!/usr/bin/env node", { raw: false }),
   ],
   // Some libraries import Node modules but don't use them in the browser.
