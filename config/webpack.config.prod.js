@@ -1,5 +1,5 @@
 'use strict';
-
+process.env.NODE_ENV = 'production';
 var autoprefixer = require('autoprefixer');
 var webpack = require('webpack');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -78,13 +78,13 @@ module.exports = {
     // We use `fallback` instead of `root` because we want `node_modules` to "win"
     // if there any conflicts. This matches Node resolution mechanism.
     // https://github.com/facebookincubator/create-react-app/issues/253
-    fallback: paths.nodePaths,
+    // fallback: paths.nodePaths,
     // These are the reasonable defaults supported by the Node ecosystem.
     // We also include JSX as a common component filename extension to support
     // some tools, although we do not recommend using it, see:
     // https://github.com/facebookincubator/create-react-app/issues/290
-    extensions: ['.js', '.json', '.jsx', '.sass', '.scss', ''],
-    root: paths.appSrc,
+    // extensions: ['.js', '.json', '.jsx', '.sass', '.scss', ''],
+    // root: paths.appSrc,
     alias: {
       // Support React Native Web
       // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
@@ -94,14 +94,7 @@ module.exports = {
   module: {
     // First, run the linter.
     // It's important to do this before Babel processes the JS.
-    preLoaders: [
-      {
-        test: /\.(js|jsx)$/,
-        loader: 'eslint',
-        include: paths.appSrc
-      }
-    ],
-    loaders: [
+    rules: [
       // ** ADDING/UPDATING LOADERS **
       // The "url" loader handles all assets unless explicitly excluded.
       // The `exclude` list *must* be updated with every change to loader extensions.
@@ -111,6 +104,12 @@ module.exports = {
       // "url" loader embeds assets smaller than specified size as data URLs to avoid requests.
       // Otherwise, it acts like the "file" loader.
       {
+        enforce: 'pre',
+        test: /\.(js|jsx)$/,
+        loader: 'eslint-loader',
+        include: paths.appSrc
+      },
+      {
         exclude: [
           /\.html$/,
           /\.(js|jsx)$/,
@@ -118,7 +117,7 @@ module.exports = {
           /\.json$/,
           /\.svg$/
         ],
-        loader: 'url',
+        loader: 'url-loader',
         query: {
           limit: 10000,
           name: 'media/[name].[hash:8].[ext]'
@@ -128,9 +127,10 @@ module.exports = {
       {
         test: /\.(js|jsx)$/,
         include: paths.appSrc,
-        loader: 'babel',
+        exclude: /node_modules/,
+        loader: 'babel-loader',
         query: {
-          presets: ['react', 'es2015']
+          presets: ['es2015', 'react']
         }
       },
       // The notation here is somewhat confusing.
@@ -147,23 +147,23 @@ module.exports = {
       // in the main CSS file.
       {
         test: /(\.css|\.scss)$/,
-        loader: ExtractTextPlugin.extract(
-          'style-loader',
-          'css-loader?importLoaders=1!postcss-loader!sass-loader',
-          extractTextPluginOptions
-        )
+        loader: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: ['css-loader', 'postcss-loader', 'sass-loader'],
+          // extractTextPluginOptions
+        })
         // Note: this won't work without `new ExtractTextPlugin()` in `plugins`.
       },
       // JSON is not enabled by default in Webpack but both Node and Browserify
       // allow it implicitly so we also enable it.
       {
         test: /\.json$/,
-        loader: 'json'
+        loader: 'json-loader'
       },
       // "file" loader for svg
       {
         test: /\.svg$/,
-        loader: 'file',
+        loader: 'file-loader',
         query: {
           name: 'media/[name].[hash:8].[ext]'
         }
@@ -178,19 +178,34 @@ module.exports = {
   },
 
   // We use PostCSS for autoprefixing only.
-  postcss: function() {
-    return [
-      autoprefixer({
-        browsers: [
-          '>1%',
-          'last 4 versions',
-          'Firefox ESR',
-          'not ie < 9', // React doesn't support IE8 anyway
-        ]
-      }),
-    ];
-  },
+  // postcss: function() {
+  //   return [
+  //     autoprefixer({
+  //       browsers: [
+  //         '>1%',
+  //         'last 4 versions',
+  //         'Firefox ESR',
+  //         'not ie < 9', // React doesn't support IE8 anyway
+  //       ]
+  //     }),
+  //   ];
+  // },
   plugins: [
+    new webpack.LoaderOptionsPlugin({
+      options: {
+        context: __dirname,
+        postcss: [
+          autoprefixer({
+            browsers: [
+              '>1%',
+              'last 4 versions',
+              'Firefox ESR',
+              'not ie < 9', // React doesn't support IE8 anyway
+            ]
+          }),
+        ]
+      }
+    }),
     // Makes some environment variables available in index.html.
     // The public URL is available as %PUBLIC_URL% in index.html, e.g.:
     // <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
@@ -223,7 +238,7 @@ module.exports = {
     // This helps ensure the builds are consistent if source hasn't changed:
     new webpack.optimize.OccurrenceOrderPlugin(),
     // Try to dedupe duplicated modules, if any:
-    new webpack.optimize.DedupePlugin(),
+    // new webpack.optimize.DedupePlugin(),
     // Minify the code.
     new webpack.optimize.UglifyJsPlugin({
       compress: {
@@ -261,11 +276,11 @@ module.exports = {
     }),
     // Wouter: Added to remove Unexpected character '#' from npm-cli.js
     // https://stackoverflow.com/a/40763389/6761698
-    // new webpack.BannerPlugin({
-    //   banner: "#!/usr/bin/env node",
-    //   raw: true
-    // })
-    new webpack.BannerPlugin("#!/usr/bin/env node", { raw: false }),
+    new webpack.BannerPlugin({
+      banner: "#!/usr/bin/env node",
+      raw: true
+    })
+    // new webpack.BannerPlugin("#!/usr/bin/env node", { raw: false }),
   ],
   // Some libraries import Node modules but don't use them in the browser.
   // Tell Webpack to provide empty mocks for them so importing them works.
